@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="GBK"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+	http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
+	http://www.springframework.org/schema/tx 
+	http://www.springframework.org/schema/tx/spring-tx-4.0.xsd
+	http://www.springframework.org/schema/aop 
+	http://www.springframework.org/schema/aop/spring-aop-4.0.xsd">
+	
+	<bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource"
+			destroy-method="close"
+		p:driverClass="com.mysql.jdbc.Driver"
+		p:jdbcUrl="jdbc:mysql://127.0.0.1:3306/attedance"
+		p:user="root"
+		p:password="Aa135246@3"
+		p:maxPoolSize="40"
+		p:minPoolSize="2"
+		p:initialPoolSize="2"
+		p:maxIdleTime="30"/>
+	<!-- 定义Hibernate的SessionFactory，SessionFactory需要依赖数据源，注入dataSource -->
+	<bean id="sessionFactory" 
+		class="org.springframework.orm.hibernate4.LocalSessionFactoryBean"
+		p:dataSource-ref="dataSource">
+		<!-- mappingResources用来列出全部映射文件 -->
+		<property name="annotatedClasses">
+			<list>
+				<!-- 以下用来列出所有的PO类-->
+				<value>com.yanli.bean.Account</value>
+				<value>com.yanli.bean.Course</value>
+				<value>com.yanli.bean.Record</value>
+			</list>
+		</property>
+		<!-- 定义Hibernate SessionFactory的属性 -->
+		<property name="hibernateProperties">
+			<props>
+				<!-- 指定Hibernate的连接方言 -->
+				<prop key="hibernate.dialect">
+					org.hibernate.dialect.MySQL5InnoDBDialect</prop>
+				<!--是否根据Hiberante映射创建数据表 -->
+				<prop key="hibernate.hbm2ddl.auto">update</prop>
+				<prop key="hibernate.show_sql">true</prop>
+				<prop key="hibernate.format_sql">true</prop>				
+			</props>
+		</property>
+	</bean>
+	<!-- 定义Service组件，并将DAO组件注入Service组件 -->	
+	<bean id="accountService" class="com.yanli.services.AccountService"
+		p:accountDao-ref="accountDaoHibernate4"/>
+	<!-- 定义DAO组件，并将SessionFactory注入DAO组件 -->		
+	<bean id="accountDaoHibernate4" class="com.yanli.bean.dao.impl.AccountDaoHibernate4"
+		p:sessionFactory-ref="sessionFactory"/>
+		
+	<!-- 定义Service组件，并将DAO组件注入Service组件 -->	
+	<bean id="courseService" class="com.yanli.services.CourseService"
+		p:courseDao-ref="courseDaoHibernate4"
+		p:recordDao-ref="recordDaoHibernate4"/>
+	<!-- 定义DAO组件，并将SessionFactory注入DAO组件 -->		
+	<bean id="courseDaoHibernate4" class="com.yanli.bean.dao.impl.CourseDaoHibernate4"
+		p:sessionFactory-ref="sessionFactory"/>
+		
+	<bean id="recordService" class="com.yanli.services.RecordService"
+		p:recordDao-ref="recordDaoHibernate4"/>	
+	<bean id="recordDaoHibernate4" class="com.yanli.bean.dao.impl.RecordDaoHibernate4"
+		p:sessionFactory-ref="sessionFactory"/>
+	
+	<!-- 配置Hibernate的局部事务管理器，使用HibernateTransactionManager类 -->
+	<!-- 该类是PlatformTransactionManager接口针对采用Hibernate的特定实现类 -->
+	<!-- 配置HibernateTransactionManager需依赖注入SessionFactory -->
+	<bean id="transactionManager" 
+		class="org.springframework.orm.hibernate4.HibernateTransactionManager"
+		p:sessionFactory-ref="sessionFactory"/>
+
+	<tx:annotation-driven transaction-manager="transactionManager"/>
+</beans>
